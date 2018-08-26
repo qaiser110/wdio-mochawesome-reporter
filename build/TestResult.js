@@ -1,10 +1,12 @@
-const path = require('path')
-const stringify = require('json-stringify-safe')
-const uuidV4 = require('uuid/v4')
+'use strict';
 
-const BuildTestResult = (data,suiteUUID,config,sessionId) => {
+var path = require('path');
+var stringify = require('json-stringify-safe');
+var uuidV4 = require('uuid/v4');
 
-    let test = {
+var BuildTestResult = function BuildTestResult(data, suiteUUID, config, sessionId) {
+
+    var test = {
         'title': data.title,
         'fullTitle': data.title,
         'timedOut': false,
@@ -19,57 +21,57 @@ const BuildTestResult = (data,suiteUUID,config,sessionId) => {
         'parentUUID': suiteUUID,
         'skipped': data.state === 'pending',
         'isHook': false,
-        'context': buildContext(data,config.mochawesomeOpts,config.screenshotPath,sessionId),
+        'context': buildContext(data, config.mochawesomeOpts, config.screenshotPath, sessionId),
         'state': formatState(data.state),
         'err': formatError(data.error)
-    }
+    };
 
-    return test
-}
+    return test;
+};
 
-function formatState (state){
+function formatState(state) {
     switch (state) {
         case 'pass':
-            return 'passed'
+            return 'passed';
             break;
         case 'fail':
-            return 'failed'
+            return 'failed';
             break;
         default:
             break;
     }
 }
 
-function formatError (error){
-    let err = {}
+function formatError(error) {
+    var err = {};
 
     if (error) {
-        err.name = error.type
-        err.message = error.message
-        err.estack = error.stack
-        err.stack = error.stack
+        err.name = error.type;
+        err.message = error.message;
+        err.estack = error.stack;
+        err.stack = error.stack;
         if (error.actual && error.expected) {
-            err.showDiff = true
-            err.actual = error.actual
-            err.expected = error.expected
+            err.showDiff = true;
+            err.actual = error.actual;
+            err.expected = error.expected;
         }
     }
 
-    return err
+    return err;
 }
 
-function buildContext(data,mochawesomeOpts,screenshotPath, sessionId){
-    let testContext = []
+function buildContext(data, mochawesomeOpts, screenshotPath, sessionId) {
+    var testContext = [];
 
     //add session id to test context for debugging research
     testContext.push({
         title: "Session Id",
         value: sessionId
-    })
+    });
 
     //context can be specified in a Mocha test if there is any add it first
-    if(data.context){
-        testContext = testContext.concat(data.context)
+    if (data.context) {
+        testContext = testContext.concat(data.context);
     }
 
     if (mochawesomeOpts && mochawesomeOpts.includeScreenshots) {
@@ -77,46 +79,46 @@ function buildContext(data,mochawesomeOpts,screenshotPath, sessionId){
          * output is a log of all the wdio commands issued for a test
          * we can filter this for any screenshot commands and include them in the context array
          */
-        let screenshotCommands = data.output.filter(function (cmd) {
-            return cmd.type === 'screenshot'
-        })
+        var screenshotCommands = data.output.filter(function (cmd) {
+            return cmd.type === 'screenshot';
+        });
         if (screenshotCommands.length > 0) {
-            const sp = sanitizeScreenshotPath(mochawesomeOpts,screenshotPath)
+            var sp = sanitizeScreenshotPath(mochawesomeOpts, screenshotPath);
             // https://github.com/adamgruber/mochawesome#example
-            screenshotCommands.forEach(cmd => {
+            screenshotCommands.forEach(function (cmd) {
                 // if the payload file name does not contain a path, then add the path given in the config file
                 if (cmd.payload.filename.indexOf(path.sep) === -1) {
                     testContext.push({
-                        title: `Screenshot: ${cmd.payload.filename}`,
+                        title: 'Screenshot: ' + cmd.payload.filename,
                         value: path.join(sp, cmd.payload.filename)
-                    })
+                    });
                 } else {
                     testContext.push({
-                        title: `Screenshot: ${cmd.payload.filename}`,
+                        title: 'Screenshot: ' + cmd.payload.filename,
                         value: cmd.payload.filename
-                    })
+                    });
                 }
-            })
+            });
         }
     }
-    if(!testContext || testContext.length===0){
-        return
+    if (!testContext || testContext.length === 0) {
+        return;
     } else {
-        return JSON.stringify(testContext)
+        return JSON.stringify(testContext);
     }
 }
 
-function sanitizeScreenshotPath(mochawesomeOpts,screenshotPath){
-    let sp = screenshotPath.replace('//$/', '')
+function sanitizeScreenshotPath(mochawesomeOpts, screenshotPath) {
+    var sp = screenshotPath.replace('//$/', '');
 
-    if(mochawesomeOpts && mochawesomeOpts.screenshotUseRelativePath){
+    if (mochawesomeOpts && mochawesomeOpts.screenshotUseRelativePath) {
         //screenshots will be in a folder under the mochawesome report
-        sp = path.join('./',sp)
+        sp = path.join('./', sp);
     } else {
         //absolute path
-        sp = path.resolve(sp)
+        sp = path.resolve(sp);
     }
-    return sp
+    return sp;
 }
 
-module.exports = BuildTestResult
+module.exports = BuildTestResult;
